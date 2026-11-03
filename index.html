@@ -24,14 +24,19 @@
     .cancel-btn { display: none; background: #e2e8f0; color: #334155; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; padding: 0.7rem 1rem; }
     .manage-drawer { display: none; background: #e2e8f0; padding: 1.1rem; border-radius: 10px; margin-bottom: 1.25rem; }
     .manage-drawer.open { display: block; }
-    .manage-grid { display: grid; grid-template-columns: 2fr 1.2fr 1fr auto; gap: 0.75rem; align-items: end; }
+    .manage-grid { display: grid; grid-template-columns: 1.2fr 1.5fr 1.1fr 0.9fr auto; gap: 0.75rem; align-items: end; }
+    .checkbox-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.85rem; background: #f8fafc; padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid #cbd5e1; width: fit-content; }
+    .checkbox-row input[type="checkbox"] { width: 16px; height: 16px; margin: 0; cursor: pointer; }
+    .checkbox-row label { margin: 0; cursor: pointer; font-size: 0.85rem; color: #0f172a; }
     .section-title { font-size: 1.15rem; font-weight: 700; margin: 0 0 0.9rem 0; display: flex; justify-content: space-between; align-items: center; }
-    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
     .balance-card { background: var(--card); padding: 1.15rem; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-top: 4px solid var(--accent); display: flex; flex-direction: column; justify-content: space-between; position: relative; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; }
     .balance-card:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
     .balance-card.active-filter { border: 2px solid var(--accent); background: #f0fdf4; }
     .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.4rem; margin-bottom: 0.35rem; }
     .balance-card h4 { margin: 0; color: #334155; font-size: 0.95rem; }
+    .bank-tag { font-size: 0.68rem; font-weight: 600; color: #475569; background: #f1f5f9; padding: 0.1rem 0.38rem; border-radius: 4px; display: inline-block; margin-top: 0.2rem; }
+    .shared-tag { background: #dbeafe; color: #1e40af; }
     .del-card-btn { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 0.85rem; padding: 0 0.2rem; line-height: 1; }
     .del-card-btn:hover { color: var(--danger); }
     .due-badge { font-size: 0.68rem; font-weight: 700; padding: 0.18rem 0.4rem; border-radius: 4px; white-space: nowrap; }
@@ -57,7 +62,7 @@
     .filter-banner { display: none; background: #eff6ff; border: 1px solid #bfdbfe; padding: 0.35rem 0.6rem; border-radius: 6px; font-size: 0.8rem; color: #1e40af; margin-bottom: 0.5rem; justify-content: space-between; align-items: center; }
     .filter-banner.active { display: flex; }
     .clear-filter { background: none; border: none; color: #2563eb; cursor: pointer; font-weight: 600; text-decoration: underline; padding: 0; }
-    @media (max-width: 680px) { .main-grid, .manage-grid, .form-row { grid-template-columns: 1fr; } }
+    @media (max-width: 760px) { .main-grid, .manage-grid, .form-row { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -77,13 +82,23 @@
   <!-- Collapsible Drawer: Add or Update a Card -->
   <div id="manageDrawer" class="manage-drawer">
     <h4 style="margin: 0 0 0.6rem 0;">Add New Card (or Update Existing Card Limit / Due Date)</h4>
+    
+    <div class="checkbox-row">
+      <input type="checkbox" id="isSharedLimit" onchange="toggleSharedLimitUI()">
+      <label for="isSharedLimit">🔗 Shared Bank Limit (Pool credit limit with other shared cards from the same bank)</label>
+    </div>
+
     <form id="addCardForm" class="manage-grid">
       <div>
-        <label>Card Name</label>
-        <input type="text" id="newCardName" placeholder="e.g., Axis Atlas" required style="margin-bottom:0;">
+        <label id="bankNameLabel">Bank Name</label>
+        <input type="text" id="newBankName" placeholder="e.g., HDFC, Axis, ICICI" required style="margin-bottom:0;">
       </div>
       <div>
-        <label>Credit Limit (₹)</label>
+        <label id="cardVariantLabel">Card Variant</label>
+        <input type="text" id="newCardName" placeholder="e.g., Millennia, Tata Neu" required style="margin-bottom:0;">
+      </div>
+      <div>
+        <label id="limitLabel">Credit Limit (₹)</label>
         <input type="number" id="newCardLimit" placeholder="150000" required style="margin-bottom:0;">
       </div>
       <div>
@@ -92,7 +107,9 @@
       </div>
       <button type="submit" id="saveCardBtn" class="btn" style="height: 38px;">+ Save Card</button>
     </form>
-    <div class="status-text" style="margin-top:0.5rem;">Tip: To remove an old card you no longer use, click the <strong>✕</strong> button in the top-right corner of its card tile below.</div>
+    <div class="status-text" style="margin-top:0.5rem;">
+      Tip: When <strong>Shared Bank Limit</strong> is ticked, all shared cards under the same Bank Name share a single credit pool. Updating the limit on one shared card updates the shared limit for that bank.
+    </div>
   </div>
 
   <!-- TOP SECTION: Quick Entry / Edit Form & Recent Activity -->
@@ -118,7 +135,7 @@
 
         <div class="form-row">
           <div>
-            <label>Card</label>
+            <label>Card Variant</label>
             <select id="card" required></select>
           </div>
           <div>
@@ -169,40 +186,61 @@
   <div id="cardsContainer" class="cards-grid"></div>
 
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw7uMXgzFzTcP1eOdLLO-OEBN9j5SnwN_JQtEdBbzTuzcJ4hkpu4NQzHCjFSfepCl2e/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw48LzDFpoYytE2fO23547_qLWC8NJ2wY6H6OfIgpCP3cH3HEBBXDd5BPyLft5Ej0sd/exec';
 
     const DEFAULT_CARDS = {
-      'HDFC Credit':      { limit: 150000, dueDay: 5 },
-      'SBI Cashback':     { limit: 100000, dueDay: 12 },
-      'ICICI Amazon Pay': { limit: 200000, dueDay: 18 }
+      'HDFC Millennia':   { limit: 150000, dueDay: 5,  bank: 'HDFC',  shared: true },
+      'HDFC Tata Neu':    { limit: 150000, dueDay: 5,  bank: 'HDFC',  shared: true },
+      'SBI Cashback':     { limit: 100000, dueDay: 12, bank: 'SBI',   shared: false },
+      'ICICI Amazon Pay': { limit: 200000, dueDay: 18, bank: 'ICICI', shared: false }
     };
 
     let recentCache = [];
-    let activeCardFilter = null; // null means show all cards
+    let activeCardFilter = null;
     document.getElementById('date').valueAsDate = new Date();
 
     function toggleManageDrawer() {
       document.getElementById('manageDrawer').classList.toggle('open');
     }
 
+    function toggleSharedLimitUI() {
+      const isShared = document.getElementById('isSharedLimit').checked;
+      document.getElementById('limitLabel').innerText = isShared ? 'Shared Bank Limit (₹)' : 'Card Credit Limit (₹)';
+    }
+
+    // Group dropdown options under Bank Name (<optgroup>)
     function populateDropdown(cardConfig) {
       const cardSelect = document.getElementById('card');
       const currentVal = cardSelect.value;
       cardSelect.innerHTML = '';
+
+      const groups = {};
       Object.keys(cardConfig).forEach(cardName => {
-        const opt = document.createElement('option');
-        opt.value = cardName;
-        opt.textContent = cardName;
-        cardSelect.appendChild(opt);
+        const cfg = cardConfig[cardName];
+        const bankName = (cfg.bank && cfg.bank.trim()) ? cfg.bank.trim() : 'Other Cards';
+        if (!groups[bankName]) groups[bankName] = [];
+        groups[bankName].push({ name: cardName, shared: Boolean(cfg.shared) });
       });
+
+      Object.keys(groups).forEach(bankName => {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = `🏦 ${bankName}`;
+        groups[bankName].forEach(item => {
+          const opt = document.createElement('option');
+          opt.value = item.name;
+          opt.textContent = item.shared ? `${item.name} (Shared)` : item.name;
+          optgroup.appendChild(opt);
+        });
+        cardSelect.appendChild(optgroup);
+      });
+
       if (currentVal && cardConfig[currentVal]) cardSelect.value = currentVal;
     }
 
     function setCardFilter(cardName) {
       activeCardFilter = cardName;
       renderActivityList();
-      
-      // Update active styling on dashboard tiles
+
       document.querySelectorAll('.balance-card[data-cardname]').forEach(tile => {
         if (tile.getAttribute('data-cardname') === cardName) {
           tile.classList.add('active-filter');
@@ -342,30 +380,84 @@
       const sheetCards = data.cards || {};
       const activeCardNames = Object.keys(cardConfig);
 
+      // 1. Pre-calculate Shared Bank Pools
+      // Map of normalized bank key -> { bankName, limit, totalOwed, count }
+      const sharedPools = {};
+      activeCardNames.forEach(cardName => {
+        const cfg = cardConfig[cardName] || {};
+        const stats = sheetCards[cardName] || { spent: 0, paid: 0, owed: 0 };
+        const isShared = Boolean(cfg.shared) && Boolean(cfg.bank);
+
+        if (isShared) {
+          const bankKey = cfg.bank.trim().toLowerCase();
+          if (!sharedPools[bankKey]) {
+            sharedPools[bankKey] = {
+              bankName: cfg.bank.trim(),
+              limit: Number(cfg.limit) || 0,
+              totalOwed: 0,
+              count: 0
+            };
+          }
+          // Keep highest/latest limit configured for the shared bank pool
+          if (Number(cfg.limit) > 0) {
+            sharedPools[bankKey].limit = Number(cfg.limit);
+          }
+          sharedPools[bankKey].totalOwed += Math.max(0, stats.owed);
+          sharedPools[bankKey].count += 1;
+        }
+      });
+
       let totalOwedAll = 0;
       let totalLimitAll = 0;
+      const countedSharedBanks = new Set();
       let cardsHtml = '';
 
+      // 2. Render each card variant tile
       activeCardNames.forEach(cardName => {
         const stats = sheetCards[cardName] || { spent: 0, paid: 0, owed: 0 };
-        const cfg = cardConfig[cardName] || { limit: 100000, dueDay: 1 };
+        const cfg = cardConfig[cardName] || { limit: 100000, dueDay: 1, bank: '', shared: false };
 
-        const owed = Math.max(0, stats.owed);
+        const cardOwed = Math.max(0, stats.owed);
         totalOwedAll += stats.owed;
-        totalLimitAll += cfg.limit;
 
-        const utilPct = cfg.limit > 0 ? Math.min(100, (owed / cfg.limit) * 100) : 0;
+        const isShared = Boolean(cfg.shared) && Boolean(cfg.bank);
+        const bankKey = isShared ? cfg.bank.trim().toLowerCase() : null;
+        const pool = isShared ? sharedPools[bankKey] : null;
+
+        // Add to overall limit only once per shared bank pool
+        if (isShared) {
+          if (!countedSharedBanks.has(bankKey)) {
+            totalLimitAll += pool.limit;
+            countedSharedBanks.add(bankKey);
+          }
+        } else {
+          totalLimitAll += (Number(cfg.limit) || 0);
+        }
+
+        // Determine effective limit & owed used for Available Balance and Utilization %
+        const effectiveLimit = isShared ? pool.limit : (Number(cfg.limit) || 0);
+        const effectiveUsed = isShared ? pool.totalOwed : cardOwed;
+        const availableBalance = Math.max(0, effectiveLimit - effectiveUsed);
+
+        const utilPct = effectiveLimit > 0 ? Math.min(100, (effectiveUsed / effectiveLimit) * 100) : 0;
         const barColor = getBarColor(utilPct);
         const dueInfo = getDueBadge(cfg.dueDay, stats.owed);
         const isCleared = stats.owed <= 0;
         const safeName = cardName.replace(/'/g, "\\'");
         const isFiltered = activeCardFilter && activeCardFilter.toLowerCase() === cardName.toLowerCase();
 
+        const bankBadgeHtml = cfg.bank
+          ? `<span class="bank-tag ${isShared ? 'shared-tag' : ''}">${cfg.bank}${isShared ? ' • Shared Pool' : ''}</span>`
+          : '';
+
         cardsHtml += `
           <div class="balance-card ${isFiltered ? 'active-filter' : ''}" data-cardname="${cardName}" onclick="setCardFilter('${safeName}')" title="Click to filter activity for ${cardName}">
             <div>
               <div class="card-top">
-                <h4>${cardName}</h4>
+                <div>
+                  <h4>${cardName}</h4>
+                  ${bankBadgeHtml}
+                </div>
                 <div style="display:flex; align-items:center; gap:0.25rem;">
                   <span class="due-badge ${dueInfo.cls}">${dueInfo.text}</span>
                   <button class="del-card-btn" title="Remove card from dashboard" onclick="event.stopPropagation(); deleteCard('${safeName}')">✕</button>
@@ -376,8 +468,8 @@
               </div>
               <div class="progress-wrap">
                 <div class="progress-labels">
-                  <span>Used: ${utilPct.toFixed(1)}%</span>
-                  <span>Limit: ₹${(cfg.limit / 1000).toFixed(0)}k</span>
+                  <span>${isShared ? 'Bank Pool Used' : 'Used'}: ${utilPct.toFixed(1)}%</span>
+                  <span>${isShared ? 'Shared Limit' : 'Limit'}: ₹${(effectiveLimit / 1000).toFixed(0)}k</span>
                 </div>
                 <div class="progress-track">
                   <div class="progress-fill" style="width: ${utilPct}%; background: ${barColor};"></div>
@@ -385,7 +477,9 @@
               </div>
             </div>
             <div class="sub-stats">
-              <span>Avail: ₹${Math.max(0, cfg.limit - owed).toLocaleString('en-IN')}</span>
+              <span title="${isShared ? 'Available credit remaining across ' + cfg.bank + ' shared limit' : 'Available credit on this card'}">
+                <strong>${isShared ? 'Bank Avail' : 'Avail'}: ₹${availableBalance.toLocaleString('en-IN')}</strong>
+              </span>
               <span>Paid: ₹${stats.paid.toLocaleString('en-IN')}</span>
             </div>
           </div>`;
@@ -398,7 +492,10 @@
         <div class="balance-card" style="border-top-color: #0f172a; background: #f8fafc;" onclick="setCardFilter(null)" title="Click to show all transactions">
           <div>
             <div class="card-top">
-              <h4>Total All Cards</h4>
+              <div>
+                <h4>Total All Cards</h4>
+                <span class="bank-tag">Combined Portfolio</span>
+              </div>
               <span class="due-badge due-safe">${activeCardNames.length} Active</span>
             </div>
             <div class="owed-amount ${totalOwedAll <= 0 ? 'owed-clear' : ''}">
@@ -407,7 +504,7 @@
             <div class="progress-wrap">
               <div class="progress-labels">
                 <span>Overall: ${totalUtilPct.toFixed(1)}%</span>
-                <span>Total Limit: ₹${(totalLimitAll / 1000).toFixed(0)}k</span>
+                <span>Net Limit: ₹${(totalLimitAll / 1000).toFixed(0)}k</span>
               </div>
               <div class="progress-track">
                 <div class="progress-fill" style="width: ${totalUtilPct}%; background: ${totalBarColor};"></div>
@@ -415,7 +512,7 @@
             </div>
           </div>
           <div class="sub-stats">
-            <span>Total Avail: ₹${Math.max(0, totalLimitAll - Math.max(0, totalOwedAll)).toLocaleString('en-IN')}</span>
+            <span><strong>Total Avail: ₹${Math.max(0, totalLimitAll - Math.max(0, totalOwedAll)).toLocaleString('en-IN')}</strong></span>
           </div>
         </div>` + cardsHtml;
 
@@ -456,11 +553,20 @@
       btn.disabled = true;
       btn.innerText = 'Saving...';
 
+      const bank = document.getElementById('newBankName').value.trim();
+      const variant = document.getElementById('newCardName').value.trim();
+      // Prefix card variant with bank name if not already included so every card key is unique and clear
+      const fullCardName = variant.toLowerCase().startsWith(bank.toLowerCase())
+        ? variant
+        : `${bank} ${variant}`;
+
       const payload = {
         action: 'addCard',
-        card: document.getElementById('newCardName').value.trim(),
+        bank: bank,
+        card: fullCardName,
         limit: document.getElementById('newCardLimit').value,
-        dueDay: document.getElementById('newCardDue').value
+        dueDay: document.getElementById('newCardDue').value,
+        shared: document.getElementById('isSharedLimit').checked
       };
 
       try {
@@ -469,9 +575,12 @@
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload)
         });
+        document.getElementById('newBankName').value = '';
         document.getElementById('newCardName').value = '';
         document.getElementById('newCardLimit').value = '';
         document.getElementById('newCardDue').value = '';
+        document.getElementById('isSharedLimit').checked = false;
+        toggleSharedLimitUI();
         await fetchBalances();
       } catch (err) {
         alert('Failed to save card.');
